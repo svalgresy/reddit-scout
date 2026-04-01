@@ -1,11 +1,54 @@
-"""Collecte Reddit via API publique .json — pas d'OAuth requis."""
+"""Collecte Reddit via OAuth API (avec fallback public .json)."""
 
+import base64
 import json
+import os
 import time
 import urllib.request
 from dataclasses import dataclass, field
 
 from src import config
+
+_oauth_token: str | None = None
+_oauth_expires: float = 0
+
+
+def _get_oauth_token() -> str | None:
+    """Get Reddit OAuth token using client credentials (application-only)."""
+    global _oauth_token, _oauth_expires
+
+    if _oauth_token and time.time() < _oauth_expires:
+        return _oauth_token
+
+    client_id = os.environ.get("REDDIT_CLIENT_ID")
+    client_secret = os.environ.get("REDDIT_CLIENT_SECRET")
+
+    if not client_id or not client_secret:
+        return None
+
+    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    data = "grant_type=client_credentials".encode()
+
+    req = urllib.request.Request(
+        "https://www.reddit.com/api/v1/access_token",
+        data=data,
+        headers={
+            "Authorization": f"Basic {credentials}",
+            "User-Agent": config.USER_AGENT,
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode())
+            _oauth_token = result["access_token"]
+            _oauth_expires = time.time() + result.get("expires_in", 3600) - 60
+            return _oauth_token
+    except Exception as e:
+        print(f"  [!] OAuth error: {e}")
+        return None
 
 
 @dataclass
@@ -35,7 +78,20 @@ def build_url(subreddit: str, limit: int = 25, time_filter: str = "day") -> str:
 
 
 def _fetch_json(url: str) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": config.USER_AGENT})
+    """Fetch JSON from Reddit — OAuth if available, public fallback."""
+    token = _get_oauth_token()
+
+    if token:
+        # Use OAuth endpoint
+        oauth_url = url.replace("https://www.reddit.com/", "https://oauth.reddit.com/")
+        req = urllib.request.Request(oauth_url, headers={
+            "Authorization": f"Bearer {token}",
+            "User-Agent": config.USER_AGENT,
+        })
+    else:
+        # Public fallback
+        req = urllib.request.Request(url, headers={"User-Agent": config.USER_AGENT})
+
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read().decode("utf-8"))
 

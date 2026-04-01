@@ -41,6 +41,8 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
           DB_PATH: data/scout.db
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
         run: python -m src.agent
 
       - name: Upload PDF report
@@ -56,6 +58,7 @@ jobs:
         run: |
           git config user.name "reddit-scout[bot]"
           git config user.email "reddit-scout[bot]@users.noreply.github.com"
-          git add data/scout.db reports/*.md
+          git add data/scout.db || true
+          git add reports/*.md 2>/dev/null || true
           git diff --cached --quiet || git commit -m "scout: rapport $(date -u +%Y-%m-%d_%H%M)"
-          git push
+          git push || true
