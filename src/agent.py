@@ -80,12 +80,13 @@ def run(args: argparse.Namespace) -> None:
 
     print("[5/9] Analyses Perplexity...")
     print("  - Tendances...")
-    trends_raw = pplx.identify_trends(pplx_client, posts_json, n=args.trends)
-    trends_list = _parse_trends_json(trends_raw)
+    raw_trends = pplx.identify_trends(pplx_client, posts_json, n=args.trends)
+    trends_list = _parse_trends_json(raw_trends)  # Parse for DB
     db.save_trends(trends_list, run_id)
+    trends_raw = _clean_perplexity_output(raw_trends)  # Clean for report
 
     print("  - Correlations...")
-    correlations = pplx.find_correlations(pplx_client, posts_json)
+    correlations = _clean_perplexity_output(pplx.find_correlations(pplx_client, posts_json))
 
     weak_analysis = ""
     if weak_signals:
@@ -97,7 +98,7 @@ def run(args: argparse.Namespace) -> None:
              for p in weak_signals[:10]],
             indent=2, ensure_ascii=False,
         )
-        weak_analysis = pplx.analyze_weak_signals(pplx_client, weak_json)
+        weak_analysis = _clean_perplexity_output(pplx.analyze_weak_signals(pplx_client, weak_json))
 
     print("  - Sentiment...")
     sentiment_results, sentiment_shifts = _analyze_sentiments(
@@ -111,22 +112,22 @@ def run(args: argparse.Namespace) -> None:
         print("  - Enrichissement web...")
         web_parts = []
         for t in trends_list[:3]:
-            enriched = pplx.enrich_trend_with_web(
+            enriched = _clean_perplexity_output(pplx.enrich_trend_with_web(
                 pplx_client,
                 topic=t.get("topic", ""),
                 summary=t.get("summary", ""),
                 evidence=json.dumps(t.get("evidence", []), ensure_ascii=False),
-            )
+            ))
             web_parts.append(f"### {t.get('topic', 'Tendance')}\n\n{enriched}")
         web_enrichment = "\n\n---\n\n".join(web_parts)
 
     print("  - Previsions...")
-    forecasts = pplx.forecast_trends(pplx_client, trends_raw)
+    forecasts = _clean_perplexity_output(pplx.forecast_trends(pplx_client, trends_raw))
 
     print(f"  - Deep-dive (top {args.deep_dive})...")
     deep_parts = []
     for p in top_posts[:args.deep_dive]:
-        analysis = pplx.deep_dive(pplx_client, p)
+        analysis = _clean_perplexity_output(pplx.deep_dive(pplx_client, p))
         deep_parts.append(f"### {p['title']}\n\n{analysis}")
     deep_dives = "\n\n---\n\n".join(deep_parts)
     print()
@@ -137,7 +138,7 @@ def run(args: argparse.Namespace) -> None:
     history = db.get_history_comparison()
     if history:
         prev_trends = db.get_previous_trends()
-        history_comparison = pplx.compare_with_history(
+        history_comparison = _clean_perplexity_output(pplx.compare_with_history(
             pplx_client,
             current_trends=trends_raw,
             previous_trends=json.dumps(prev_trends, ensure_ascii=False),
@@ -145,7 +146,7 @@ def run(args: argparse.Namespace) -> None:
             new_trends=", ".join(history.get("new_trends", [])) or "Aucune",
             disappeared_trends=", ".join(history.get("disappeared", [])) or "Aucune",
             persistent_trends=", ".join(history.get("persistent", [])) or "Aucune",
-        )
+        ))
 
     # ETAPE 7 : Resume executif
     print("[7/9] Resume executif...")
@@ -157,7 +158,7 @@ def run(args: argparse.Namespace) -> None:
         f"## Signaux Faibles\n{weak_analysis}\n\n"
         f"## Analyses Approfondies\n{deep_dives}"
     )
-    executive_summary = pplx.executive_summary(pplx_client, full_analysis)
+    executive_summary = _clean_perplexity_output(pplx.executive_summary(pplx_client, full_analysis))
 
     # ETAPE 8 : Rapport
     print("[8/9] Generation rapport...")
@@ -189,14 +190,44 @@ def run(args: argparse.Namespace) -> None:
     # ETAPE 9 : Email
     if not args.no_email:
         print("[9/9] Envoi email...")
+
+        # Identify actions relevant to BP
+        bp_keywords = ["axios", "npm", "node", "go ", "golang", "docker", "shopify", "odoo",
+                       "sage", "x3", "pimcore", "sophos", "vmware", "esxi", "vsphere",
+                       "claude", "anthropic", "mcp", "cve", "zero-day", "supply chain",
+                       "exchange", "office 365", "microsoft 365"]
+
+        actions = []
+        all_text = f"{trends_raw} {correlations} {weak_analysis} {forecasts}".lower()
+        for kw in bp_keywords:
+            if kw in all_text:
+                # Find the context around the keyword
+                idx = all_text.find(kw)
+                start = max(0, idx - 80)
+                end = min(len(all_text), idx + 80)
+                snippet = all_text[start:end].replace("\n", " ").strip()
+                actions.append(f"<b>{kw.upper()}</b> mentionné : ...{snippet}...")
+
+        actions_html = ""
+        if actions:
+            actions_items = "".join(f"<li>{a}</li>" for a in actions[:10])
+            actions_html = f"""
+            <div style="background:#fff0f0;border-left:4px solid #e00;padding:12px;margin:15px 0">
+                <h3 style="color:#c00;margin:0 0 8px">&#9888; Actions à prévoir pour BLACK PEARL</h3>
+                <ul style="color:#900;margin:0">{actions_items}</ul>
+            </div>
+            """
+
         summary_html = f"""
-        <html><body style="font-family:Arial,sans-serif">
-        <h2>reddit-scout — Rapport de veille</h2>
-        <p><strong>Run {run_id}</strong> — {len(top_posts)} TOP, {len(interesting)} INTERESSANT</p>
-        <h3>Resume</h3>
+        <html><body style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto">
+        <h2 style="color:#16213e">reddit-scout — Rapport de veille</h2>
+        <p><strong>Run {run_id}</strong> — {len(top_posts)} TOP, {len(interesting)} INTERESSANT sur {len(raw_posts)} posts scannés</p>
+        {actions_html}
+        <h3>Résumé exécutif</h3>
         <div>{executive_summary.replace(chr(10), '<br>')}</div>
         <hr>
-        <p style="color:#999">Rapport PDF en piece jointe. Appels Perplexity : {pplx.get_call_count()}/{config.MAX_API_CALLS_PER_RUN}</p>
+        <p style="color:#999;font-size:11px">Rapport PDF en pièce jointe. Appels Perplexity : {pplx.get_call_count()}/{config.MAX_API_CALLS_PER_RUN} |
+        <a href="https://github.com/svalgresy/reddit-scout">GitHub</a></p>
         </body></html>
         """
         alerts.send_report(summary_html, pdf_path)
@@ -212,6 +243,59 @@ def run(args: argparse.Namespace) -> None:
     print(f"  Rapport PDF: {pdf_path or 'non disponible'}")
     print(f"  Perplexity  : {pplx.get_call_count()}/{config.MAX_API_CALLS_PER_RUN} appels")
     print(f"  Run ID      : {run_id}")
+
+
+def _clean_perplexity_output(raw: str) -> str:
+    """Convert raw JSON from Perplexity into readable Markdown."""
+    import json as _json
+    text = raw.strip()
+
+    # Try to detect and parse JSON
+    json_text = text
+    if "```json" in text:
+        json_text = text.split("```json")[1].split("```")[0]
+    elif "```" in text:
+        json_text = text.split("```")[1].split("```")[0]
+    elif not text.startswith(("[", "{")):
+        return text  # Already Markdown, return as-is
+
+    try:
+        data = _json.loads(json_text)
+    except (_json.JSONDecodeError, IndexError):
+        return text  # Not JSON, return as-is
+
+    # Convert JSON to Markdown
+    if isinstance(data, list):
+        parts = []
+        for i, item in enumerate(data, 1):
+            if isinstance(item, dict):
+                title = item.get("topic") or item.get("title") or item.get("theme") or f"Element {i}"
+                lines = [f"### {i}. {title}"]
+                for k, v in item.items():
+                    if k in ("topic", "title", "theme"):
+                        continue
+                    if isinstance(v, list):
+                        lines.append(f"- **{k.replace('_', ' ').title()}** :")
+                        for elem in v:
+                            lines.append(f"  - {elem}")
+                    else:
+                        lines.append(f"- **{k.replace('_', ' ').title()}** : {v}")
+                parts.append("\n".join(lines))
+            else:
+                parts.append(f"- {item}")
+        return "\n\n".join(parts)
+    elif isinstance(data, dict):
+        lines = []
+        for k, v in data.items():
+            if isinstance(v, list):
+                lines.append(f"**{k.replace('_', ' ').title()}** :")
+                for elem in v:
+                    lines.append(f"- {elem}")
+            else:
+                lines.append(f"**{k.replace('_', ' ').title()}** : {v}")
+        return "\n".join(lines)
+
+    return text
 
 
 def _parse_trends_json(raw: str) -> list[dict]:

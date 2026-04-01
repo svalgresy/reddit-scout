@@ -49,9 +49,14 @@ Pour chaque tendance, fournis :
 5. **momentum** — Hausse 🔺, Stable ➡️, ou Baisse 🔻 selon les signaux d'engagement.
 6. **score** — score d'importance de 1 à 10.
 
-Retourne UNIQUEMENT un tableau JSON d'objets avec les clés : \
-`topic`, `summary`, `evidence`, `sentiment`, `momentum`, `score`.
-Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
+Rédige ta réponse en Markdown structuré. Pour chaque tendance, utilise ce format :
+
+### [Numéro]. [Titre de la tendance]
+- **Résumé** : [2-3 phrases]
+- **Posts concernés** : [liste à puces des titres de posts et subreddits]
+- **Sentiment** : [Positif / Négatif / Mixte / Neutre]
+- **Momentum** : [Hausse / Stable / Baisse]
+- **Importance** : [score /10]
 """
 
 # ── Analyse Approfondie (Deep Dive) ──────────────────────────────────
@@ -123,8 +128,11 @@ Pour chaque corrélation :
 2. **subreddits** — les subreddits concernés
 3. **significance** — pourquoi cette convergence est importante
 
-Retourne un tableau JSON avec les clés : `theme`, `subreddits`, `significance`.
-Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
+Rédige ta réponse en Markdown structuré :
+
+### [Thème partagé]
+- **Subreddits** : [liste]
+- **Pourquoi c'est significatif** : [explication]
 """
 
 # ── Analyse de Sentiment Avancée ─────────────────────────────────────
@@ -143,14 +151,13 @@ Analyse le sentiment de cette communauté. Raisonne étape par étape :
 2. Évalue le ton (positif, négatif, neutre) de chacun.
 3. Calcule le sentiment global pondéré par l'engagement.
 
-Retourne un objet JSON avec :
-- `subreddit` : nom du subreddit
-- `score` : score de sentiment entre -1.0 (très négatif) et +1.0 (très positif)
-- `label` : "Très positif" / "Positif" / "Neutre" / "Négatif" / "Très négatif"
-- `dominant_emotions` : liste des 3 émotions dominantes
-- `key_drivers` : les 3 sujets qui influencent le plus le sentiment
-- `sample_size` : nombre de posts analysés
-Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
+Rédige ta réponse en Markdown structuré :
+
+**Score de sentiment** : [valeur entre -1.0 et +1.0]
+**Label** : [Très positif / Positif / Neutre / Négatif / Très négatif]
+**Émotions dominantes** : [liste de 3 émotions]
+**Facteurs clés** : [les 3 sujets qui influencent le plus]
+**Taille de l'échantillon** : [nombre de posts]
 """
 
 # ── Analyse des Signaux Faibles ──────────────────────────────────────
@@ -167,9 +174,12 @@ Pour chaque signal faible :
 2. **A-t-il le potentiel de devenir viral ?** (Oui / Peut-être / Non) avec justification.
 3. **Catégorisation** : Controverse / Innovation / Crise / Curiosité / Autre.
 
-Retourne un tableau JSON avec les clés : \
-`title`, `subreddit`, `analysis`, `viral_potential`, `category`.
-Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
+Rédige ta réponse en Markdown structuré. Pour chaque signal :
+
+### [Titre du post] (r/[subreddit])
+- **Pourquoi autant de discussion ?** : [explication]
+- **Potentiel viral** : [Oui / Peut-être / Non] — [justification]
+- **Catégorie** : [Controverse / Innovation / Crise / Curiosité]
 
 Rédige les analyses en français.
 """
@@ -189,19 +199,21 @@ En utilisant tes capacités de recherche web :
 3. Mentionne les **acteurs clés** impliqués (entreprises, personnalités, institutions).
 4. Évalue la **fiabilité** de la tendance : est-ce un vrai mouvement ou un buzz éphémère ?
 
-Retourne en JSON :
-- `topic` : le sujet
-- `web_sources` : liste d'articles/sources trouvés (titre + résumé en 1 phrase)
-- `key_data` : données chiffrées clés
-- `key_actors` : acteurs impliqués
-- `reliability` : "Confirmée" / "Probable" / "Incertaine" / "Buzz éphémère"
-- `enriched_summary` : résumé enrichi en 3-4 phrases
-Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
+Rédige ta réponse en texte fluide et structuré avec des titres Markdown :
 
-**FORMAT IMPORTANT** : Rédige en texte fluide et structuré, PAS en JSON brut.
-Utilise des paragraphes, des listes à puces et des titres Markdown.
-Chaque source doit être sur sa propre ligne avec un tiret.
-Évite les structures imbriquées complexes.
+### Sources web
+- [Titre de l'article] — [résumé en 1 phrase]
+
+### Données chiffrées
+- [statistique clé]
+
+### Acteurs clés
+- [entreprise/personnalité impliquée]
+
+### Fiabilité : [Confirmée / Probable / Incertaine / Buzz éphémère]
+
+### Résumé enrichi
+[3-4 phrases de synthèse]
 
 Rédige en français.
 """
