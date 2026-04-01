@@ -11,11 +11,11 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 PERPLEXITY_MODEL = "sonar-pro"
 PERPLEXITY_BASE_URL = "https://api.perplexity.ai"
 
-# ── Email O365
-SMTP_HOST = os.getenv("SMTP_HOST", "smtp.office365.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT") or "587")
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+# ── Email via Microsoft Graph API ────────────────────────────────────
+GRAPH_TENANT_ID = os.getenv("GRAPH_TENANT_ID")
+GRAPH_CLIENT_ID = os.getenv("GRAPH_CLIENT_ID")
+GRAPH_CLIENT_SECRET = os.getenv("GRAPH_CLIENT_SECRET")
+GRAPH_SENDER = os.getenv("GRAPH_SENDER", "bot@blackpearl.re")
 ALERT_EMAIL_TO = os.getenv("ALERT_EMAIL_TO", "")
 
 # ── Subreddits BLACK PEARL (20)

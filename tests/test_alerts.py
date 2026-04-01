@@ -1,5 +1,5 @@
-"""Tests alerts.py."""
-from src.alerts import build_report_email, build_alert_html
+"""Tests alerts.py — Graph API email."""
+from src.alerts import build_alert_html
 
 
 def test_build_alert_html():
@@ -11,11 +11,6 @@ def test_build_alert_html():
     assert "<html>" in html
 
 
-def test_build_report_email_without_pdf():
-    msg = build_report_email(
-        subject="Scout Report",
-        summary_html="<p>Rapport du jour</p>",
-        pdf_path=None,
-    )
-    assert msg["Subject"] == "Scout Report"
-    assert len(msg.get_payload()) >= 1
+def test_build_alert_html_empty():
+    html = build_alert_html("Empty", [])
+    assert "Empty" in html

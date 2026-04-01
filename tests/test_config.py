@@ -11,10 +11,9 @@ def test_default_subreddits():
     assert "shopify" in cfg.DEFAULT_SUBREDDITS
     assert "ClaudeAI" in cfg.DEFAULT_SUBREDDITS
 
-def test_smtp_defaults():
+def test_graph_defaults():
     import src.config as cfg
-    assert cfg.SMTP_HOST == "smtp.office365.com"
-    assert cfg.SMTP_PORT == 587
+    assert cfg.GRAPH_SENDER == "bot@blackpearl.re"
 
 def test_perplexity_budget():
     import src.config as cfg

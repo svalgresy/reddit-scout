@@ -1,51 +1,109 @@
-"""Alertes email O365 SMTP avec support PDF en piece jointe."""
+"""Alertes email via Microsoft Graph API — bot@blackpearl.re"""
 
+import json
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
+import base64
+import urllib.request
+import urllib.parse
 
 from src import config
 
+_access_token: str | None = None
+_token_expires: float = 0
 
-def send_email(subject: str, body_html: str, pdf_path: str | None = None) -> bool:
-    if not all([config.SMTP_USER, config.SMTP_PASSWORD, config.ALERT_EMAIL_TO]):
-        print("[!] Email non configure — alerte ignoree.")
-        return False
 
-    msg = build_report_email(subject, body_html, pdf_path)
+def _get_graph_token() -> str | None:
+    """Get OAuth2 token for Microsoft Graph API using client_credentials."""
+    import time
+    global _access_token, _token_expires
+
+    if _access_token and time.time() < _token_expires:
+        return _access_token
+
+    if not all([config.GRAPH_TENANT_ID, config.GRAPH_CLIENT_ID, config.GRAPH_CLIENT_SECRET]):
+        print("[!] Graph API non configure — email ignore.")
+        return None
+
+    token_url = f"https://login.microsoftonline.com/{config.GRAPH_TENANT_ID}/oauth2/v2.0/token"
+    data = urllib.parse.urlencode({
+        "client_id": config.GRAPH_CLIENT_ID,
+        "client_secret": config.GRAPH_CLIENT_SECRET,
+        "scope": "https://graph.microsoft.com/.default",
+        "grant_type": "client_credentials",
+    }).encode()
+
+    req = urllib.request.Request(token_url, data=data, headers={
+        "Content-Type": "application/x-www-form-urlencoded",
+    })
 
     try:
-        with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT) as server:
-            server.starttls()
-            server.login(config.SMTP_USER, config.SMTP_PASSWORD)
-            server.sendmail(config.SMTP_USER, config.ALERT_EMAIL_TO.split(","), msg.as_string())
-        print(f"[OK] Email envoye a {config.ALERT_EMAIL_TO}")
-        return True
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode())
+            _access_token = result["access_token"]
+            _token_expires = time.time() + result.get("expires_in", 3600) - 60
+            return _access_token
     except Exception as e:
-        print(f"[!] Erreur envoi email: {e}")
+        print(f"[!] Graph token error: {e}")
+        return None
+
+
+def send_email(subject: str, body_html: str, pdf_path: str | None = None) -> bool:
+    """Send email via Microsoft Graph API with optional PDF attachment."""
+    if not config.ALERT_EMAIL_TO:
+        print("[!] ALERT_EMAIL_TO non configure.")
         return False
 
+    token = _get_graph_token()
+    if not token:
+        return False
 
-def build_report_email(subject: str, summary_html: str, pdf_path: str | None = None) -> MIMEMultipart:
-    msg = MIMEMultipart("mixed")
-    msg["Subject"] = subject
-    msg["From"] = config.SMTP_USER or ""
-    msg["To"] = config.ALERT_EMAIL_TO
+    # Build message
+    message = {
+        "message": {
+            "subject": subject,
+            "body": {
+                "contentType": "HTML",
+                "content": body_html,
+            },
+            "toRecipients": [
+                {"emailAddress": {"address": addr.strip()}}
+                for addr in config.ALERT_EMAIL_TO.split(",")
+            ],
+        },
+        "saveToSentItems": "false",
+    }
 
-    msg.attach(MIMEText(summary_html, "html", "utf-8"))
-
+    # Add PDF attachment if exists
     if pdf_path and os.path.exists(pdf_path):
         with open(pdf_path, "rb") as f:
-            pdf_part = MIMEApplication(f.read(), _subtype="pdf")
-            pdf_part.add_header(
-                "Content-Disposition", "attachment",
-                filename=os.path.basename(pdf_path),
-            )
-            msg.attach(pdf_part)
+            pdf_bytes = f.read()
+        message["message"]["attachments"] = [{
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            "name": os.path.basename(pdf_path),
+            "contentType": "application/pdf",
+            "contentBytes": base64.b64encode(pdf_bytes).decode(),
+        }]
 
-    return msg
+    # Send via Graph API
+    url = f"https://graph.microsoft.com/v1.0/users/{config.GRAPH_SENDER}/sendMail"
+    payload = json.dumps(message).encode()
+
+    req = urllib.request.Request(url, data=payload, headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    })
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            print(f"[OK] Email envoye via Graph API a {config.ALERT_EMAIL_TO}")
+            return True
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else ""
+        print(f"[!] Graph API error {e.code}: {error_body[:200]}")
+        return False
+    except Exception as e:
+        print(f"[!] Email error: {e}")
+        return False
 
 
 def build_alert_html(title: str, items: list[dict]) -> str:
