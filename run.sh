@@ -19,6 +19,9 @@ mkdir -p "$SCOUT_DIR/logs"
 
 echo "=== reddit-scout v2 — $(date) ===" | tee "$LOG_FILE"
 
+# Activate venv
+source "$SCOUT_DIR/.venv/bin/activate"
+
 # Run the agent
 python3 -m src.agent 2>&1 | tee -a "$LOG_FILE"
 

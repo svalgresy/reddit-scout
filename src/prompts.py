@@ -51,6 +51,7 @@ Pour chaque tendance, fournis :
 
 Retourne UNIQUEMENT un tableau JSON d'objets avec les clés : \
 `topic`, `summary`, `evidence`, `sentiment`, `momentum`, `score`.
+Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
 """
 
 # ── Analyse Approfondie (Deep Dive) ──────────────────────────────────
@@ -105,6 +106,7 @@ En utilisant toute l'analyse ci-dessous, rédige un **Briefing Exécutif** adapt
 - **Actions recommandées** — 3 prochaines étapes concrètes
 
 Limite le total à 500 mots. Rédige en français.
+Rédige de manière accessible. Après chaque section, ajoute un encadré **Glossaire** qui définit en 1 phrase les termes techniques, acronymes et noms de projets mentionnés (ex: LLaMA, supply chain attack, CVE, RAG, MCP, etc.).
 """
 
 # ── Corrélations Cross-Subreddit ─────────────────────────────────────
@@ -122,6 +124,7 @@ Pour chaque corrélation :
 3. **significance** — pourquoi cette convergence est importante
 
 Retourne un tableau JSON avec les clés : `theme`, `subreddits`, `significance`.
+Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
 """
 
 # ── Analyse de Sentiment Avancée ─────────────────────────────────────
@@ -147,6 +150,7 @@ Retourne un objet JSON avec :
 - `dominant_emotions` : liste des 3 émotions dominantes
 - `key_drivers` : les 3 sujets qui influencent le plus le sentiment
 - `sample_size` : nombre de posts analysés
+Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
 """
 
 # ── Analyse des Signaux Faibles ──────────────────────────────────────
@@ -165,6 +169,7 @@ Pour chaque signal faible :
 
 Retourne un tableau JSON avec les clés : \
 `title`, `subreddit`, `analysis`, `viral_potential`, `category`.
+Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
 
 Rédige les analyses en français.
 """
@@ -191,6 +196,12 @@ Retourne en JSON :
 - `key_actors` : acteurs impliqués
 - `reliability` : "Confirmée" / "Probable" / "Incertaine" / "Buzz éphémère"
 - `enriched_summary` : résumé enrichi en 3-4 phrases
+Si le format JSON n'est pas lisible, privilégie un format Markdown structuré avec titres, listes et paragraphes.
+
+**FORMAT IMPORTANT** : Rédige en texte fluide et structuré, PAS en JSON brut.
+Utilise des paragraphes, des listes à puces et des titres Markdown.
+Chaque source doit être sur sa propre ligne avec un tiret.
+Évite les structures imbriquées complexes.
 
 Rédige en français.
 """

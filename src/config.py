@@ -18,11 +18,11 @@ GRAPH_CLIENT_SECRET = os.getenv("GRAPH_CLIENT_SECRET")
 GRAPH_SENDER = os.getenv("GRAPH_SENDER", "bot@blackpearl.re")
 ALERT_EMAIL_TO = os.getenv("ALERT_EMAIL_TO", "")
 
-# ── Subreddits BLACK PEARL (20)
+# ── Subreddits BLACK PEARL (21)
 SUBS_INFRA = ["sysadmin", "homelab", "selfhosted", "docker", "devops"]
 SUBS_ERP = ["shopify", "odoo", "ecommerce"]
 SUBS_DEV = ["golang", "nextjs", "programming"]
-SUBS_IA = ["LocalLLaMA", "MachineLearning", "ClaudeAI", "ChatGPT"]
+SUBS_IA = ["LocalLLaMA", "MachineLearning", "ClaudeAI", "ChatGPT", "MistralAI"]
 SUBS_CRYPTO = ["CryptoCurrency", "algotrading", "defi"]
 SUBS_SECU = ["netsec", "cybersecurity"]
 

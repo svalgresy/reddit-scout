@@ -3,7 +3,7 @@ def test_subreddits_count():
     import src.config as cfg
     all_subs = (cfg.SUBS_INFRA + cfg.SUBS_ERP + cfg.SUBS_DEV
                 + cfg.SUBS_IA + cfg.SUBS_CRYPTO + cfg.SUBS_SECU)
-    assert len(all_subs) == 20
+    assert len(all_subs) == 21
 
 def test_default_subreddits():
     import src.config as cfg

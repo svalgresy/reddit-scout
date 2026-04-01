@@ -1,7 +1,6 @@
 """Generation du rapport Markdown + PDF."""
 
 import os
-import subprocess
 from datetime import datetime, timezone
 
 from jinja2 import Environment, FileSystemLoader
@@ -66,16 +65,42 @@ def generate_report(
 
 
 def _convert_to_pdf(md_path: str, base_name: str) -> str | None:
+    """Convert Markdown to styled PDF using weasyprint."""
     pdf_path = os.path.join(config.REPORTS_DIR, f"{base_name}.pdf")
     try:
-        subprocess.run(
-            ["pandoc", md_path, "-o", pdf_path, "--pdf-engine=xelatex",
-             "-V", "geometry:margin=2cm", "-V", "mainfont:DejaVu Sans",
-             "-V", "fontsize=11pt"],
-            check=True, capture_output=True, timeout=120,
-        )
-        print(f"[OK] PDF genere: {pdf_path}")
+        import markdown
+        from weasyprint import HTML
+
+        with open(md_path, "r", encoding="utf-8") as f:
+            md_content = f.read()
+
+        html_body = markdown.markdown(md_content, extensions=["tables", "fenced_code"])
+
+        html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+  @page {{ size: A4; margin: 2cm;
+    @bottom-center {{ content: "reddit-scout v2 — BLACK PEARL RTD — Page " counter(page) " / " counter(pages); font-size: 8pt; color: #999; }}
+  }}
+  body {{ font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; font-size: 11pt; line-height: 1.6; color: #1a1a1a; }}
+  h1 {{ color: #1a1a2e; border-bottom: 3px solid #e94560; padding-bottom: 8px; font-size: 22pt; }}
+  h2 {{ color: #16213e; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 25px; font-size: 16pt; }}
+  h3 {{ color: #0f3460; font-size: 13pt; }}
+  table {{ width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 10pt; }}
+  th {{ background-color: #16213e; color: white; padding: 10px 8px; text-align: left; }}
+  td {{ padding: 8px; border-bottom: 1px solid #eee; }}
+  tr:nth-child(even) {{ background-color: #f8f9fa; }}
+  blockquote {{ border-left: 4px solid #e94560; margin: 10px 0; padding: 8px 15px; background: #fef9f9; color: #555; font-style: italic; }}
+  code {{ background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-size: 10pt; }}
+  hr {{ border: none; border-top: 1px solid #ddd; margin: 20px 0; }}
+  a {{ color: #e94560; text-decoration: none; }}
+  strong {{ color: #16213e; }}
+</style></head>
+<body>{html_body}</body></html>"""
+
+        HTML(string=html).write_pdf(pdf_path)
+        print(f"[OK] PDF genere (weasyprint): {pdf_path}")
         return pdf_path
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+    except Exception as e:
         print(f"[!] PDF non genere: {e}")
         return None
