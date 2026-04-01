@@ -1,0 +1,107 @@
+---
+title: "reddit-scout — Rapport de veille"
+date: {{ date }}
+run_id: {{ run_id }}
+posts_scanned: {{ posts_scanned }}
+posts_retained: {{ posts_retained }}
+perplexity_calls: {{ perplexity_calls }}
+---
+
+# Rapport de Veille Reddit — {{ date }}
+
+## Resume Executif
+
+{{ executive_summary }}
+
+---
+
+## Top Decouvertes (score >= 80)
+
+{% for p in top_posts %}
+### {{ loop.index }}. {{ p.title }}
+- **Subreddit** : r/{{ p.subreddit }} | **Score Reddit** : {{ p.score }} | **Commentaires** : {{ p.num_comments }}
+- **Score IA** : {{ p.ai_score }}/100 — {{ p.ai_justification }}
+- **Lien** : https://reddit.com{{ p.permalink }}
+{% if p.top_comments %}
+**Top commentaires :**
+{% for c in p.top_comments[:2] %}
+> {{ c[:200] }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+
+---
+
+## Tendances Identifiees
+
+{{ trends }}
+
+---
+
+## Signaux Faibles
+
+{{ weak_signals }}
+
+---
+
+## Correlations Cross-Subreddit
+
+{{ correlations }}
+
+---
+
+## Analyse de Sentiment
+
+{{ sentiment_table }}
+
+{{ sentiment_shifts }}
+
+---
+
+## Enrichissement Web
+
+{{ web_enrichment }}
+
+---
+
+## Previsions
+
+{{ forecasts }}
+
+---
+
+{% if history_comparison %}
+## Comparaison Historique
+
+{{ history_comparison }}
+
+---
+
+{% endif %}
+## Analyses Approfondies
+
+{{ deep_dives }}
+
+---
+
+## Posts Interessants (score 65-79)
+
+{% for p in interesting_posts %}
+- **{{ p.ai_score }}** — r/{{ p.subreddit }} — [{{ p.title[:80] }}](https://reddit.com{{ p.permalink }})
+{% endfor %}
+
+---
+
+## Statistiques
+
+| Metrique | Valeur |
+|---|---|
+| Posts scannes | {{ posts_scanned }} |
+| Posts retenus | {{ posts_retained }} |
+| TOP (>= 80) | {{ top_posts | length }} |
+| INTERESSANT (65-79) | {{ interesting_posts | length }} |
+| Appels Perplexity | {{ perplexity_calls }}/{{ max_api_calls }} |
+| Run ID | {{ run_id }} |
+
+*Genere par reddit-scout v2 — Claude sonnet + Perplexity sonar-pro — BLACK PEARL RTD*
